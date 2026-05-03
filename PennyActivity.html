@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Circle Click Game</title>
+  <link rel="preconnect" href="https://api.fontshare.com" />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=cabinet-grotesk@700&display=swap" rel="stylesheet" />
+  <style>
+    :root, [data-theme="light"] {
+      --font-display: 'Cabinet Grotesk', 'Arial', sans-serif;
+      --font-body: 'Satoshi', 'Arial', sans-serif;
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --space-1: 0.25rem;
+      --space-2: 0.5rem;
+      --space-3: 0.75rem;
+      --space-4: 1rem;
+      --space-6: 1.5rem;
+      --space-8: 2rem;
+      --space-10: 2.5rem;
+      --radius-md: 0.5rem;
+      --radius-lg: 0.75rem;
+      --radius-xl: 1rem;
+      --color-bg: #f7f6f2;
+      --color-surface: #fbfbf9;
+      --color-surface-2: #f1efe8;
+      --color-border: rgba(40, 37, 29, 0.14);
+      --color-text: #28251d;
+      --color-text-muted: #6d6a63;
+      --color-primary: #01696f;
+      --color-primary-hover: #0c4e54;
+      --color-success: #3f7b20;
+      --color-danger: #c74b86;
+      --color-danger-soft: #ffd6e8;
+      --color-success-soft: #d7f0cf;
+      --shadow-md: 0 10px 30px rgba(27, 30, 21, 0.1);
+    }
+
+    [data-theme="dark"] {
+      --color-bg: #171614;
+      --color-surface: #1f1d1b;
+      --color-surface-2: #262320;
+      --color-border: rgba(255, 255, 255, 0.12);
+      --color-text: #ece9df;
+      --color-text-muted: #b2ada2;
+      --color-primary: #4f98a3;
+      --color-primary-hover: #6fb0b9;
+      --color-success: #79b45b;
+      --color-danger: #ef86b3;
+      --color-danger-soft: #553142;
+      --color-success-soft: #31492d;
+      --shadow-md: 0 12px 34px rgba(0, 0, 0, 0.35);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html { color-scheme: light dark; }
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      line-height: 1.5;
+      color: var(--color-text);
+      background:
+        radial-gradient(circle at top left, rgba(1, 105, 111, 0.14), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(199, 75, 134, 0.12), transparent 28%),
+        var(--color-bg);
+    }
+
+    button, select, input { font: inherit; }
+    button {
+      border: 0;
+      border-radius: var(--radius-md);
+      padding: 0.8rem 1rem;
+      cursor: pointer;
+      min-height: 44px;
+      transition: transform 160ms ease, background 160ms ease, opacity 160ms ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    button:active { transform: translateY(1px); }
+    button:focus-visible, select:focus-visible {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 3px;
+    }
+
+    .app {
+      width: min(1200px, calc(100% - 2rem));
+      margin: 0 auto;
+      padding: var(--space-6) 0 var(--space-8);
+      display: grid;
+      gap: var(--space-6);
+    }
+
+    .panel {
+      background: color-mix(in srgb, var(--color-surface) 92%, transparent);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-md);
+    }
+
+    .header {
+      padding: var(--space-6);
+      display: grid;
+      gap: var(--space-4);
+    }
+
+    .panel.playing .header,
+    .panel.playing .footer-note {
+      display: none;
+    }
+
+    .panel.playing .stats {
+      padding-top: var(--space-6);
+    }
+
+    .topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      flex-wrap: wrap;
+    }
+
+    .title {
+      font-family: var(--font-display);
+      font-size: var(--text-xl);
+      line-height: 1;
+      letter-spacing: -0.03em;
+      margin: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--color-text-muted);
+      max-width: 70ch;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: var(--space-4);
+      align-items: end;
+    }
+
+    .control {
+      display: grid;
+      gap: var(--space-2);
+    }
+
+    .control label {
+      font-size: var(--text-sm);
+      font-weight: 700;
+    }
+
+    .control select, .control .stat {
+      min-height: 44px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 0.75rem 0.9rem;
+      background: var(--color-surface-2);
+      color: var(--color-text);
+    }
+
+    .actions {
+      display: flex;
+      gap: var(--space-3);
+      flex-wrap: wrap;
+    }
+
+    .primary { background: var(--color-primary); color: #fff; }
+    .primary:hover { background: var(--color-primary-hover); }
+    .secondary {
+      background: transparent;
+      color: var(--color-text);
+      border: 1px solid var(--color-border);
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: var(--space-4);
+      padding: 0 var(--space-6) var(--space-6);
+    }
+
+    .stat-card {
+      background: var(--color-surface-2);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-4);
+    }
+
+    .in-play-only { display: none; }
+
+    .panel.playing .in-play-only { display: block; }
+
+    .panel.playing .setup-only { display: none; }
+
+    .stat-label {
+      font-size: var(--text-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-muted);
+      margin-bottom: var(--space-2);
+    }
+
+    .stat-value {
+      font-size: var(--text-lg);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums lining-nums;
+    }
+
+    .play-area-wrap {
+      padding: var(--space-4);
+      display: grid;
+      place-items: center;
+    }
+
+    #playArea {
+      position: relative;
+      width: min(100%, 1040px);
+      height: min(72vh, 760px);
+      overflow: hidden;
+      border-radius: calc(var(--radius-xl) + 0.125rem);
+      border: 1px solid var(--color-border);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.28), rgba(255,255,255,0.03)),
+        repeating-linear-gradient(90deg, transparent 0 59px, rgba(0,0,0,0.028) 59px 60px),
+        repeating-linear-gradient(0deg, transparent 0 59px, rgba(0,0,0,0.028) 59px 60px),
+        var(--color-surface);
+      touch-action: manipulation;
+    }
+
+    .circle {
+      position: absolute;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 0.95rem;
+      font-weight: 700;
+      user-select: none;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.16);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      transition: opacity 120ms ease, transform 120ms ease;
+    }
+
+    .circle.heads {
+      background: var(--color-success-soft);
+      color: var(--color-success);
+    }
+
+    .circle.tails {
+      background: var(--color-danger-soft);
+      color: var(--color-danger);
+    }
+
+    .circle.removed {
+      opacity: 0;
+      transform: scale(0.6);
+      pointer-events: none;
+    }
+
+    .footer-note {
+      padding: 0 var(--space-6) var(--space-6);
+      color: var(--color-text-muted);
+      font-size: var(--text-sm);
+    }
+
+    .toggle-theme {
+      width: 44px;
+      aspect-ratio: 1;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-2);
+      display: grid;
+      place-items: center;
+      color: var(--color-text);
+    }
+
+    @media (max-width: 1100px) {
+      .controls, .stats { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 640px) {
+      .app { width: min(100% - 1rem, 1200px); padding-top: var(--space-4); }
+      .header, .stats, .footer-note { padding-left: var(--space-4); padding-right: var(--space-4); }
+      .controls, .stats { grid-template-columns: 1fr; }
+      #playArea { height: 68vh; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="panel">
+      <div class="header">
+        <div class="topline">
+          <div>
+            <h1 class="title">Circle Click Game</h1>
+            <p class="subtitle">Click the green <strong>H</strong> circles before time runs out. Pink <strong>T</strong> circles are distractors. Modes change hit accuracy and heads-to-tails ratio, temperature alone changes click timing, and concentration changes the size of the play area.</p>
+          </div>
+          <button class="toggle-theme" type="button" data-theme-toggle aria-label="Switch color theme">☾</button>
+        </div>
+
+        <div class="controls">
+          <div class="control">
+            <label for="modeSelect">Mode</label>
+            <select id="modeSelect">
+              <option value="default">Default</option>
+              <option value="inhibitor">Inhibitor</option>
+              <option value="catalyst">Catalyst</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="temperatureSelect">Temperature</label>
+            <select id="temperatureSelect">
+              <option value="default">Default: 5 heads/sec</option>
+              <option value="low">Low temperature: 1 click every 1.5 sec</option>
+              <option value="high">High temperature: 7 heads/sec</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="concentrationSelect">Concentration</label>
+            <select id="concentrationSelect">
+              <option value="default">Default area</option>
+              <option value="plus50">+50% area</option>
+              <option value="plus25">+25% area</option>
+              <option value="minus25">-25% area</option>
+              <option value="minus50">-50% area</option>
+            </select>
+          </div>
+          <div class="control">
+            <label for="pressureSelect">Pressure</label>
+            <select id="pressureSelect">
+              <option value="default">Default placement</option>
+              <option value="high">High pressure: cluster in 60%</option>
+              <option value="low">Low pressure: spread apart</option>
+            </select>
+          </div>
+          <div class="control">
+            <label>Actions</label>
+            <div class="actions">
+              <button id="startBtn" class="primary" type="button">Start round</button>
+              <button id="resetBtn" class="secondary" type="button">Reset board</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-label">Score</div>
+          <div class="stat-value" id="scoreDisplay">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Time left</div>
+          <div class="stat-value" id="timeDisplay">20.0</div>
+        </div>
+        <div class="stat-card in-play-only">
+          <div class="stat-label">Status</div>
+          <div class="stat-value" id="statusDisplay">Ready</div>
+        </div>
+        <div class="stat-card setup-only">
+          <div class="stat-label">Heads remaining</div>
+          <div class="stat-value" id="headsRemainingDisplay">0</div>
+        </div>
+        <div class="stat-card setup-only">
+          <div class="stat-label">Temperature</div>
+          <div class="stat-value" id="rateDisplay">5/sec</div>
+        </div>
+        <div class="stat-card setup-only">
+          <div class="stat-label">Pressure</div>
+          <div class="stat-value" id="pressureDisplay">Default</div>
+        </div>
+      </div>
+
+      <div class="play-area-wrap">
+        <div id="playArea" aria-label="game board"></div>
+      </div>
+
+      <p class="footer-note" id="ruleText">Rule: Click inside each green circle to remove it and earn a point. Default temperature limits scoring to 5 heads per second.</p>
+    </section>
+  </main>
+
+  <script>
+    const RADIUS = 15;
+    const CIRCLE_COUNT = 100;
+    const DURATION = 20;
+    const HEAD_LABEL = 'H';
+    const TAIL_LABEL = 'T';
+    const BASE_WIDTH = 1040;
+    const BASE_HEIGHT = 760;
+
+    const panel = document.querySelector('.panel');
+    const playArea = document.getElementById('playArea');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const timeDisplay = document.getElementById('timeDisplay');
+    const headsRemainingDisplay = document.getElementById('headsRemainingDisplay');
+    const rateDisplay = document.getElementById('rateDisplay');
+    const statusDisplay = document.getElementById('statusDisplay');
+    const pressureDisplay = document.getElementById('pressureDisplay');
+    const ruleText = document.getElementById('ruleText');
+    const modeSelect = document.getElementById('modeSelect');
+    const temperatureSelect = document.getElementById('temperatureSelect');
+    const concentrationSelect = document.getElementById('concentrationSelect');
+    const pressureSelect = document.getElementById('pressureSelect');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const themeToggle = document.querySelector('[data-theme-toggle]');
+
+    const state = {
+      circles: [],
+      score: 0,
+      timeLeft: DURATION,
+      running: false,
+      timerId: null,
+      endTime: 0,
+      currentSecond: -1,
+      clicksThisSecond: 0,
+      lastLowTempScoreTime: -Infinity
+    };
+
+    const placementState = {
+      lowPressureCursor: 0
+    };
+
+    function syncPlayStateUI() {
+      panel.classList.toggle('playing', state.running);
+    }
+
+    function updateThemeIcon() {
+      const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      themeToggle.textContent = dark ? '☀' : '☾';
+      themeToggle.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+    }
+
+    function initTheme() {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+      updateThemeIcon();
+      themeToggle.addEventListener('click', () => {
+        const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        updateThemeIcon();
+      });
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function getRuleRadius() {
+      const mode = modeSelect.value;
+      if (mode === 'inhibitor') return 5;
+      if (mode === 'catalyst') return RADIUS + 2;
+      return RADIUS;
+    }
+
+    function getHeadsRatio() {
+      const mode = modeSelect.value;
+      if (mode === 'inhibitor') return 0.4;
+      if (mode === 'catalyst') return 0.6;
+      return 0.5;
+    }
+
+    function getTemperatureRule() {
+      const temperature = temperatureSelect.value;
+      if (temperature === 'low') return { mode: 'cooldown', value: 1500, label: '1 per 1.5 sec' };
+      if (temperature === 'high') return { mode: 'perSecond', value: 7, label: '7/sec' };
+      return { mode: 'perSecond', value: 5, label: '5/sec' };
+    }
+
+    function getAreaScale() {
+      const concentration = concentrationSelect.value;
+      if (concentration === 'plus50') return 1.5;
+      if (concentration === 'plus25') return 1.25;
+      if (concentration === 'minus25') return 0.75;
+      if (concentration === 'minus50') return 0.5;
+      return 1;
+    }
+
+    function getPressureMode() {
+      return pressureSelect.value;
+    }
+
+    function getPressureLabel() {
+      const pressure = getPressureMode();
+      if (pressure === 'high') return 'High';
+      if (pressure === 'low') return 'Low';
+      return 'Default';
+    }
+
+    function applyPlayAreaSize() {
+      const scale = getAreaScale();
+      const width = Math.round(BASE_WIDTH * Math.sqrt(scale));
+      const height = Math.round(BASE_HEIGHT * Math.sqrt(scale));
+      playArea.style.width = `${width}px`;
+      playArea.style.maxWidth = '100%';
+      playArea.style.height = `${height}px`;
+    }
+
+    function updateRuleText() {
+      const mode = modeSelect.value;
+      const temperatureRule = getTemperatureRule();
+      const concentration = concentrationSelect.value;
+      let modeText = 'Click inside each green circle to remove it and earn a point. Default mode uses 50% heads.';
+      if (mode === 'inhibitor') {
+        modeText = 'Inhibitor mode requires a click within 5 pixels of the circle center and uses 40% heads.';
+      } else if (mode === 'catalyst') {
+        modeText = 'Catalyst mode allows clicks up to 2 pixels outside the circle edge and uses 60% heads.';
+      }
+      let concentrationText = 'Default concentration keeps the standard play area size.';
+      if (concentration === 'plus50') {
+        concentrationText = 'Concentration setting increases the play area by 50%.';
+      } else if (concentration === 'plus25') {
+        concentrationText = 'Concentration setting increases the play area by 25%.';
+      } else if (concentration === 'minus25') {
+        concentrationText = 'Concentration setting reduces the play area by 25%.';
+      } else if (concentration === 'minus50') {
+        concentrationText = 'Concentration setting reduces the play area by 50%.';
+      }
+      let pressureText = 'Default pressure uses ordinary random placement.';
+      if (getPressureMode() === 'high') {
+        pressureText = 'High pressure clusters the circles inside 60% of the play area.';
+      } else if (getPressureMode() === 'low') {
+        pressureText = 'Low pressure spreads circles as far apart as possible.';
+      }
+      const tempText = temperatureRule.mode === 'cooldown' ? 'Temperature setting: one successful heads click allowed every 1.5 seconds.' : `Temperature setting: maximum ${temperatureRule.value} successful heads clicks per second.`;
+      ruleText.textContent = `Rule: ${modeText} ${tempText} ${concentrationText} ${pressureText}`;
+      rateDisplay.textContent = temperatureRule.label;
+      pressureDisplay.textContent = getPressureLabel();
+    }
+
+    function updateDisplays() {
+      scoreDisplay.textContent = String(state.score);
+      timeDisplay.textContent = state.timeLeft.toFixed(1);
+      headsRemainingDisplay.textContent = String(state.circles.filter(circle => circle.isHead && !circle.removed).length);
+      rateDisplay.textContent = getTemperatureRule().label;
+    }
+
+    function clearBoard() {
+      state.circles = [];
+      playArea.innerHTML = '';
+      placementState.lowPressureCursor = 0;
+    }
+
+    function randomPointWithin(left, top, width, height) {
+      return {
+        x: left + RADIUS + Math.random() * Math.max(1, width - RADIUS * 2),
+        y: top + RADIUS + Math.random() * Math.max(1, height - RADIUS * 2)
+      };
+    }
+
+    function getDefaultPosition(areaWidth, areaHeight) {
+      return randomPointWithin(0, 0, areaWidth, areaHeight);
+    }
+
+    function getHighPressurePosition(areaWidth, areaHeight) {
+      const clusterWidth = areaWidth * 0.6;
+      const clusterHeight = areaHeight * 0.6;
+      const left = (areaWidth - clusterWidth) / 2;
+      const top = (areaHeight - clusterHeight) / 2;
+      return randomPointWithin(left, top, clusterWidth, clusterHeight);
+    }
+
+    function getLowPressurePosition(areaWidth, areaHeight, existingCircles) {
+      const cols = Math.ceil(Math.sqrt(CIRCLE_COUNT));
+      const rows = Math.ceil(CIRCLE_COUNT / cols);
+      const cellWidth = areaWidth / cols;
+      const cellHeight = areaHeight / rows;
+      const index = placementState.lowPressureCursor;
+      placementState.lowPressureCursor += 1;
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      const baseX = col * cellWidth + cellWidth / 2;
+      const baseY = row * cellHeight + cellHeight / 2;
+      const jitterX = (Math.random() - 0.5) * Math.min(10, cellWidth * 0.15);
+      const jitterY = (Math.random() - 0.5) * Math.min(10, cellHeight * 0.15);
+      const x = Math.min(areaWidth - RADIUS, Math.max(RADIUS, baseX + jitterX));
+      const y = Math.min(areaHeight - RADIUS, Math.max(RADIUS, baseY + jitterY));
+      return { x, y };
+    }
+
+    function getPlacementPosition(areaWidth, areaHeight, existingCircles) {
+      const pressure = getPressureMode();
+      if (pressure === 'high') return getHighPressurePosition(areaWidth, areaHeight);
+      if (pressure === 'low') return getLowPressurePosition(areaWidth, areaHeight, existingCircles);
+      return getDefaultPosition(areaWidth, areaHeight);
+    }
+
+    function buildCircles() {
+      clearBoard();
+      applyPlayAreaSize();
+      const rect = playArea.getBoundingClientRect();
+      const areaWidth = rect.width;
+      const areaHeight = rect.height;
+      const headsCount = Math.round(CIRCLE_COUNT * getHeadsRatio());
+      const kinds = shuffle([
+        ...Array(headsCount).fill(true),
+        ...Array(CIRCLE_COUNT - headsCount).fill(false)
+      ]);
+
+      kinds.forEach((isHead, index) => {
+        const { x, y } = getPlacementPosition(areaWidth, areaHeight, state.circles);
+        const el = document.createElement('div');
+        el.className = `circle ${isHead ? 'heads' : 'tails'}`;
+        el.textContent = isHead ? HEAD_LABEL : TAIL_LABEL;
+        el.style.left = `${x - RADIUS}px`;
+        el.style.top = `${y - RADIUS}px`;
+        el.dataset.index = String(index);
+
+        const circle = { id: index, x, y, isHead, removed: false, element: el };
+        state.circles.push(circle);
+
+        el.addEventListener('click', event => handleCircleClick(event, circle));
+        playArea.appendChild(el);
+      });
+
+      updateDisplays();
+    }
+
+    function removeCircle(circle) {
+      circle.removed = true;
+      circle.element.classList.add('removed');
+      window.setTimeout(() => {
+        circle.element.remove();
+      }, 120);
+    }
+
+    function canScoreNow() {
+      const temperatureRule = getTemperatureRule();
+      const elapsedMs = (DURATION - state.timeLeft) * 1000;
+      if (temperatureRule.mode === 'cooldown') {
+        return elapsedMs - state.lastLowTempScoreTime >= temperatureRule.value;
+      }
+      const wholeSecond = Math.floor(elapsedMs / 1000);
+      if (wholeSecond !== state.currentSecond) {
+        state.currentSecond = wholeSecond;
+        state.clicksThisSecond = 0;
+      }
+      return state.clicksThisSecond < temperatureRule.value;
+    }
+
+    function handleCircleClick(event, circle) {
+      if (!state.running || circle.removed || !circle.isHead) return;
+
+      const rect = circle.element.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const dx = event.clientX - centerX;
+      const dy = event.clientY - centerY;
+      const distance = Math.hypot(dx, dy);
+
+      if (distance <= getRuleRadius()) {
+        if (!canScoreNow()) {
+          statusDisplay.textContent = getTemperatureRule().mode === 'cooldown' ? 'Temperature limit: wait 1.5 sec' : `Temperature limit: ${getTemperatureRule().label}`;
+          return;
+        }
+        if (getTemperatureRule().mode === 'cooldown') {
+          state.lastLowTempScoreTime = (DURATION - state.timeLeft) * 1000;
+        } else {
+          state.clicksThisSecond += 1;
+        }
+        removeCircle(circle);
+        state.score += 1;
+        statusDisplay.textContent = 'Scoring';
+        updateDisplays();
+      }
+    }
+
+    function stopRound(message) {
+      state.running = false;
+      syncPlayStateUI();
+      if (state.timerId) {
+        window.clearInterval(state.timerId);
+        state.timerId = null;
+      }
+      state.timeLeft = 0;
+      timeDisplay.textContent = '0.0';
+      statusDisplay.textContent = message;
+      startBtn.textContent = 'Play again';
+    }
+
+    function startRound() {
+      window.clearInterval(state.timerId);
+      state.score = 0;
+      state.timeLeft = DURATION;
+      state.running = true;
+      syncPlayStateUI();
+      state.endTime = performance.now() + DURATION * 1000;
+      state.currentSecond = -1;
+      state.clicksThisSecond = 0;
+      state.lastLowTempScoreTime = -Infinity;
+      statusDisplay.textContent = 'Running';
+      startBtn.textContent = 'Restart round';
+      buildCircles();
+      updateDisplays();
+
+      state.timerId = window.setInterval(() => {
+        const remaining = Math.max(0, (state.endTime - performance.now()) / 1000);
+        state.timeLeft = remaining;
+        timeDisplay.textContent = remaining.toFixed(1);
+
+        if (remaining <= 0.05) {
+          stopRound(`Finished: ${state.score} heads clicked`);
+        }
+      }, 50);
+    }
+
+    function resetBoard() {
+      window.clearInterval(state.timerId);
+      state.timerId = null;
+      state.running = false;
+      syncPlayStateUI();
+      state.score = 0;
+      state.timeLeft = DURATION;
+      state.currentSecond = -1;
+      state.clicksThisSecond = 0;
+      state.lastLowTempScoreTime = -Infinity;
+      statusDisplay.textContent = 'Ready';
+      startBtn.textContent = 'Start round';
+      buildCircles();
+      timeDisplay.textContent = DURATION.toFixed(1);
+      updateDisplays();
+      updateRuleText();
+    }
+
+    modeSelect.addEventListener('change', () => {
+      updateRuleText();
+      resetBoard();
+    });
+    temperatureSelect.addEventListener('change', () => {
+      updateRuleText();
+      resetBoard();
+    });
+    concentrationSelect.addEventListener('change', () => {
+      applyPlayAreaSize();
+      updateRuleText();
+      resetBoard();
+    });
+    pressureSelect.addEventListener('change', () => {
+      updateRuleText();
+      resetBoard();
+    });
+    startBtn.addEventListener('click', startRound);
+    resetBtn.addEventListener('click', resetBoard);
+    window.addEventListener('resize', resetBoard);
+
+    initTheme();
+    applyPlayAreaSize();
+    updateRuleText();
+    resetBoard();
+    syncPlayStateUI();
+  </script>
+</body>
+</html>
